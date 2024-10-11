@@ -3,7 +3,7 @@ val csvLightHeader: String = "numNodes,numCycles,malPct,malActThresh,malActPct,"
   "allMin,coopMin,malMin," +
   "allMax,coopMax,malMax," +
   "allStandardDeviation,coopStandardDeviation,malStandardDeviation," +
-  "allTotalPeers,coopTotalPeers,malTotalPeers" +
+  "allTotalPeers,coopTotalPeers,malTotalPeers," +
   "allNumTrusted,coopNumTrusted,malNumTrusted," +
   "allNumUntrusted,coopNumUntrusted,malNumUntrusted"
 

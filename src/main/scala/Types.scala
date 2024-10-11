@@ -7,15 +7,15 @@ case class ReputationInformation(
                                   min: Double,
                                   max: Double,
                                   standardDeviation: Double,
-                                  totalPeers: Long,
-                                  numTrusted: Long,
-                                  numUntrusted: Long,
-                                  numMessages: Long,
-                                  numMessagesWithTrusted: Long,
-                                  numMessagesWithUntrusted: Long,
-                                  numAssessments: Long,
-                                  numAssessmentsOfTrusted: Long,
-                                  numAssessmentsOfUntrusted: Long
+                                  totalPeers: Double,
+                                  numTrusted: Double,
+                                  numUntrusted: Double,
+                                  numMessages: Double,
+                                  numMessagesWithTrusted: Double,
+                                  numMessagesWithUntrusted: Double,
+                                  numAssessments: Double,
+                                  numAssessmentsOfTrusted: Double,
+                                  numAssessmentsOfUntrusted: Double
                                 ) derives ReadWriter {
     @targetName("add")
     def +(rhs: ReputationInformation): ReputationInformation =
