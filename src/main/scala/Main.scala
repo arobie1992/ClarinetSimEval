@@ -5,6 +5,10 @@ import java.io.*
 @main def main(directory: String, fileTypeStr: String): Unit =
   val simulations = loadSimulations(directory, FileType.valueOf(fileTypeStr.toUpperCase))
   val csvRows = simulations
+    .sortBy { sim => 
+      val stats = sim.simStats
+      (stats.numNodes, stats.numCycles, stats.malPct, stats.malActThresh, stats.malActPct) 
+    }
     .map(s => (s.simStats, s.cooperative))
     .map((stats, coop) => (
       stats,

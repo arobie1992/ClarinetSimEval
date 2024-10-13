@@ -57,7 +57,7 @@ def writeFuryFiles(output: List[Simulation], directory: String): Unit =
     .build()
   ScalaSerializers.registerSerializers(fury)
   output.zipWithIndex.foreach { (sim, i) => 
-    val fileName = sim.simStats.toFileName()
+    val fileName = sim.simStats.toFileName
     val contents = fury.serialize(sim)
     val writer = FileOutputStream(s"$directory/$fileName")
     try
