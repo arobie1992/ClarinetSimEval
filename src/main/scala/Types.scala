@@ -93,7 +93,10 @@ case class Simulation(simStats: SimStats, metrics: List[NodeMetrics]) {
   def cooperative: Seq[NodeMetrics] = metrics.filter(m => m.`type` == "COOPERATIVE")
 }
 
-case class SimStats(numNodes: Int, numCycles: Int, malPct: Double, malActThresh: Double, malActPct: Double)
+case class SimStats(numNodes: Int, numCycles: Int, malPct: Double, malActThresh: Double, malActPct: Double) {
+  def toFileName: String = s"sim-nodes$numNodes-cycles$numCycles-malPct$malPct" +
+    s"-malActThresh$malActThresh-malActPct$malActPct"
+}
 object SimStats {
   def from(fileName: String): SimStats =
     val parts = fileName.split("-").toList

@@ -1,7 +1,10 @@
-@main def main(directory: String): Unit =
-  val outputFiles = getFiles(directory)
-  val output = processResults(outputFiles)
-  val csvRows = output
+import FileType._
+
+import java.io.*
+
+@main def main(directory: String, fileTypeStr: String): Unit =
+  val simulations = loadSimulations(directory, FileType.valueOf(fileTypeStr.toUpperCase))
+  val csvRows = simulations
     .map(s => (s.simStats, s.cooperative))
     .map((stats, coop) => (
       stats,
@@ -11,12 +14,12 @@
     ))
     .map((stats, all, coop, mal) => (
       stats,
-      (all.reduce(_+_), all.size),
-      (coop.reduce(_+_), coop.size),
-      (mal.reduce(_+_), mal.size)
+      (all.reduce(_ + _), all.size),
+      (coop.reduce(_ + _), coop.size),
+      (mal.reduce(_ + _), mal.size)
     ))
     .map((stats, all, coop, mal) =>
-      val safeCalc = (a: ReputationInformation, b: Int) => if (b == 0) null else a/b
+      val safeCalc = (a: ReputationInformation, b: Int) => if (b == 0) null else a / b
       val (allInfo, allCnt) = all
       val (coopInfo, coopCnt) = coop
       val (malInfo, malCnt) = mal

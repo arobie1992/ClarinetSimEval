@@ -10,3 +10,4 @@ lazy val root = project
   )
 
 libraryDependencies += "org.scala-lang" %% "toolkit" % "0.4.0"
+libraryDependencies += "org.apache.fury" % "fury-scala_3" % "0.8.0"
