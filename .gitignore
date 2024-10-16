@@ -34,3 +34,4 @@ metals.sbt
 *.csv
 
 data/uncompressed/
+data/scratch/
