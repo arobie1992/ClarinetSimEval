@@ -9,10 +9,14 @@ enum FileType { case JSON, FURY }
 
 def loadSimulations(directory: String, fileType: FileType): List[Simulation] =
   val files = getFiles(directory)
-  fileType match
-    case JSON => parseJsonResults(files)
-    case FURY => parseFuryResults(files)
-
+  val simulations = fileType match
+      case JSON => parseJsonResults(files)
+      case FURY => parseFuryResults(files)
+  simulations.sortBy { sim =>
+    val stats = sim.simStats
+    (stats.numNodes, stats.numCycles, stats.malPct, stats.malActThresh, stats.malActPct)
+  }
+  
 def getFiles(directory: String): Seq[os.Path] =
   val dir = directory.charAt(0) match {
     case '/' => os.Path(directory)

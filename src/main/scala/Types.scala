@@ -96,6 +96,8 @@ case class Simulation(simStats: SimStats, metrics: List[NodeMetrics]) {
 case class SimStats(numNodes: Int, numCycles: Int, malPct: Double, malActThresh: Double, malActPct: Double) {
   def toFileName: String = s"sim-nodes$numNodes-cycles$numCycles-malPct$malPct" +
     s"-malActThresh$malActThresh-malActPct$malActPct"
+
+  def csv: String = s"$numNodes,$numCycles,$malPct,$malActThresh,$malActPct"
 }
 object SimStats {
   def from(fileName: String): SimStats =
@@ -118,6 +120,7 @@ object SimStats {
       malActThreshCount.toDouble/numCycles.toDouble,
       numVals(4).asInstanceOf[Double]
     )
+  def csvHeader = "numNodes,numCycles,malPct,malActThresh,malActPct"
 }
 
 class Counter(val radices: List[Int]):
@@ -143,3 +146,12 @@ class Counter(val radices: List[Int]):
   def continue(): Boolean = !overflow
 
   override def toString: String = indices.zipWithIndex.map((v, i) => s"$v/${radices(i)}").reduce(_ + "," + _)
+
+
+case class SimulationByTypes(stats: SimStats, all: ReputationInformation, coop: ReputationInformation, mal: ReputationInformation)
+
+case class AverageStats(mean: Double, standardDeviation: Double, min: Double, max: Double)
+object AverageStats {
+  def fromValues(values: Iterable[Double]): AverageStats =
+    AverageStats(mean(values), standardDeviation(values), values.min, values.max)
+}
