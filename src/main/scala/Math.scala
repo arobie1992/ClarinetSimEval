@@ -17,3 +17,14 @@ def standardDeviation(values: Iterable[Double]): Double =
   variance /= (values.size - 1)
   // Standard Deviation
   Math.sqrt(variance)
+
+def median(values: Iterable[Double]): Double =
+  val s = values.toList.sorted
+  if(s.isEmpty) return 0
+  if(s.length%2==0) {
+    val midB = s.length/2
+    val midA = midB-1
+    (s(midA)+s(midB))/2
+  } else {
+    s(s.length/2)
+  }

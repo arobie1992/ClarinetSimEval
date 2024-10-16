@@ -114,15 +114,22 @@ object AggTrustPctsList {
   )
 }
 
-case class AggregateAverages(min: AverageStats, mean: AverageStats, max: AverageStats, standardDeviation: AverageStats) {
-  def csv: String = s"${min.csv},${mean.csv},${max.csv},${standardDeviation.csv}"
+case class AggregateAverages(
+                              min: AverageStats,
+                              mean: AverageStats,
+                              max: AverageStats,
+                              standardDeviation: AverageStats,
+                              median: AverageStats
+                            ) {
+  def csv: String = s"${min.csv},${mean.csv},${max.csv},${standardDeviation.csv},${median.csv}"
 }
 object AggregateAverages {
   def from(aggs: Seq[AverageStats]): AggregateAverages = AggregateAverages(
     AverageStats.fromValues(aggs.map(_.min)),
     AverageStats.fromValues(aggs.map(_.mean)),
     AverageStats.fromValues(aggs.map(_.max)),
-    AverageStats.fromValues(aggs.map(_.standardDeviation))
+    AverageStats.fromValues(aggs.map(_.standardDeviation)),
+    AverageStats.fromValues(aggs.map(_.median))
   )
 }
 
@@ -148,10 +155,11 @@ object AggTrustPctsAgg {
 }
 
 extension (as: AverageStats)
-  def csv: String = s"${as.min.trim},${as.mean.trim},${as.max.trim},${as.standardDeviation.trim}"
+  def csv: String = s"${as.min.trim},${as.mean.trim},${as.max.trim},${as.standardDeviation.trim},${as.median.trim}"
 
 @main def main(directory: String, fileTypeStr: String): Unit =
   val simulations = loadSimulations(directory, FileType.valueOf(fileTypeStr.toUpperCase))
+  perTrialAggregates(simulations)
   val perSimulationTrustPcts = simulations
     .map(sim => (sim.simStats, sim.cooperative))
     .map { (stats, nodes) =>
@@ -163,20 +171,20 @@ extension (as: AverageStats)
     val perSimCsv = perSimulationTrustPcts
     .map((stats, coop, mal) => s"${stats.csv},${coop.csv},${mal.csv}")
     .prepended(s"${SimStats.csvHeader}," +
-      "coop_average_min,coop_average_mean,coop_average_max,coop_average_std," +
-      "coop_standardDeviation_min,coop_standardDeviation_mean,coop_standardDeviation_max,coop_standardDeviation_std," +
-      "coop_min_min,coop_min_mean,coop_min_max,coop_min_std," +
-      "coop_max_min,coop_max_mean,coop_max_max,coop_max_std," +
-      "coop_pctTrusted_min,coop_pctTrusted_mean,coop_pctTrusted_max,coop_pctTrusted_std," +
-      "coop_pctUntrusted_min,coop_pctUntrusted_mean,coop_pctUntrusted_max,coop_pctUntrusted_std," +
-      "coop_assessedPct_min,coop_assessedPct_mean,coop_assessedPct_max,coop_assessedPct_std," +
-      "mal_average_min,mal_average_mean,mal_average_max,mal_average_std," +
-      "mal_standardDeviation_min,mal_standardDeviation_mean,mal_standardDeviation_max,mal_standardDeviation_std," +
-      "mal_min_min,mal_min_mean,mal_min_max,mal_min_std," +
-      "mal_max_min,mal_max_mean,mal_max_max,mal_max_std," +
-      "mal_pctTrusted_min,mal_pctTrusted_mean,mal_pctTrusted_max,mal_pctTrusted_std," +
-      "mal_pctUntrusted_min,mal_pctUntrusted_mean,mal_pctUntrusted_max,mal_pctUntrusted_std," +
-      "mal_assessedPct_min,mal_assessedPct_mean,mal_assessedPct_max,mal_assessedPct_std")
+      "coop_average_min,coop_average_mean,coop_average_max,coop_average_std,coop_average_median," +
+      "coop_standardDeviation_min,coop_standardDeviation_mean,coop_standardDeviation_max,coop_standardDeviation_std,coop_standardDeviation_median," +
+      "coop_min_min,coop_min_mean,coop_min_max,coop_min_std,coop_min_median," +
+      "coop_max_min,coop_max_mean,coop_max_max,coop_max_std,coop_max_median," +
+      "coop_pctTrusted_min,coop_pctTrusted_mean,coop_pctTrusted_max,coop_pctTrusted_std,coop_pctTrusted_median," +
+      "coop_pctUntrusted_min,coop_pctUntrusted_mean,coop_pctUntrusted_max,coop_pctUntrusted_std,coop_pctUntrusted_median," +
+      "coop_assessedPct_min,coop_assessedPct_mean,coop_assessedPct_max,coop_assessedPct_std,coop_assessedPct_median," +
+      "mal_average_min,mal_average_mean,mal_average_max,mal_average_std,mal_average_median," +
+      "mal_standardDeviation_min,mal_standardDeviation_mean,mal_standardDeviation_max,mal_standardDeviation_std,mal_standardDeviation_median," +
+      "mal_min_min,mal_min_mean,mal_min_max,mal_min_std,mal_min_median," +
+      "mal_max_min,mal_max_mean,mal_max_max,mal_max_std,mal_max_median," +
+      "mal_pctTrusted_min,mal_pctTrusted_mean,mal_pctTrusted_max,mal_pctTrusted_std,mal_pctTrusted_median," +
+      "mal_pctUntrusted_min,mal_pctUntrusted_mean,mal_pctUntrusted_max,mal_pctUntrusted_std,mal_pctUntrusted_median," +
+      "mal_assessedPct_min,mal_assessedPct_mean,mal_assessedPct_max,mal_assessedPct_std,mal_assessedPct_median")
   writeFile("data/processed/perSim_TrustPcts.csv", perSimCsv)
 
   val byNumNodes = perSimulationTrustPcts.groupBy((stats, _, _) => stats.numNodes)
@@ -207,62 +215,76 @@ def aggregateByDimension[T: Numeric](
   val fullCsvLines = reduced
     .map((dimensionValue, stats) => s"$dimensionValue,${stats(0).csv},${stats(1).csv}")
     .prepended(s"$dimension," +
-      "coop_min_min_min,coop_min_min_mean,coop_min_min_max,coop_min_min_std," +
-      "coop_min_mean_min,coop_min_mean_mean,coop_min_mean_max,coop_min_mean_std," +
-      "coop_min_max_min,coop_min_max_mean,coop_min_max_max,coop_min_max_std," +
-      "coop_min_std_min,coop_min_std_mean,coop_min_std_max,coop_min_std_std," +
-      "coop_average_min_min,coop_average_min_mean,coop_average_min_max,coop_average_min_std," +
-      "coop_average_mean_min,coop_average_mean_mean,coop_average_mean_max,coop_average_mean_std," +
-      "coop_average_max_min,coop_average_max_mean,coop_average_max_max,coop_average_max_std," +
-      "coop_average_std_min,coop_average_std_mean,coop_average_std_max,coop_average_std_std," +
-      "coop_max_min_min,coop_max_min_mean,coop_max_min_max,coop_max_min_std," +
-      "coop_max_mean_min,coop_max_mean_mean,coop_max_mean_max,coop_max_mean_std," +
-      "coop_max_max_min,coop_max_max_mean,coop_max_max_max,coop_max_max_std," +
-      "coop_max_std_min,coop_max_std_mean,coop_max_std_max,coop_max_std_std," +
-      "coop_standardDeviation_min_min,coop_standardDeviation_min_mean,coop_standardDeviation_min_max,coop_standardDeviation_min_std," +
-      "coop_standardDeviation_mean_min,coop_standardDeviation_mean_mean,coop_standardDeviation_mean_max,coop_standardDeviation_mean_std," +
-      "coop_standardDeviation_max_min,coop_standardDeviation_max_mean,coop_standardDeviation_max_max,coop_standardDeviation_max_std," +
-      "coop_standardDeviation_std_min,coop_standardDeviation_std_mean,coop_standardDeviation_std_max,coop_standardDeviation_std_std," +
-      "coop_pctTrusted_min_min,coop_pctTrusted_min_mean,coop_pctTrusted_min_max,coop_pctTrusted_min_std," +
-      "coop_pctTrusted_mean_min,coop_pctTrusted_mean_mean,coop_pctTrusted_mean_max,coop_pctTrusted_mean_std," +
-      "coop_pctTrusted_max_min,coop_pctTrusted_max_mean,coop_pctTrusted_max_max,coop_pctTrusted_max_std," +
-      "coop_pctTrusted_std_min,coop_pctTrusted_std_mean,coop_pctTrusted_std_max,coop_pctTrusted_std_std," +
-      "coop_pctUntrusted_min_min,coop_pctUntrusted_min_mean,coop_pctUntrusted_min_max,coop_pctUntrusted_min_std," +
-      "coop_pctUntrusted_mean_min,coop_pctUntrusted_mean_mean,coop_pctUntrusted_mean_max,coop_pctUntrusted_mean_std," +
-      "coop_pctUntrusted_max_min,coop_pctUntrusted_max_mean,coop_pctUntrusted_max_max,coop_pctUntrusted_max_std," +
-      "coop_pctUntrusted_std_min,coop_pctUntrusted_std_mean,coop_pctUntrusted_std_max,coop_pctUntrusted_std_std," +
-      "coop_assessedPct_min_min,coop_assessedPct_min_mean,coop_assessedPct_min_max,coop_assessedPct_min_std," +
-      "coop_assessedPct_mean_min,coop_assessedPct_mean_mean,coop_assessedPct_mean_max,coop_assessedPct_mean_std," +
-      "coop_assessedPct_max_min,coop_assessedPct_max_mean,coop_assessedPct_max_max,coop_assessedPct_max_std," +
-      "coop_assessedPct_std_min,coop_assessedPct_std_mean,coop_assessedPct_std_max,coop_assessedPct_std_std," +
-      "mal_min_min_min,mal_min_min_mean,mal_min_min_max,mal_min_min_std," +
-      "mal_min_mean_min,mal_min_mean_mean,mal_min_mean_max,mal_min_mean_std," +
-      "mal_min_max_min,mal_min_max_mean,mal_min_max_max,mal_min_max_std," +
-      "mal_min_std_min,mal_min_std_mean,mal_min_std_max,mal_min_std_std," +
-      "mal_average_min_min,mal_average_min_mean,mal_average_min_max,mal_average_min_std," +
-      "mal_average_mean_min,mal_average_mean_mean,mal_average_mean_max,mal_average_mean_std," +
-      "mal_average_max_min,mal_average_max_mean,mal_average_max_max,mal_average_max_std," +
-      "mal_average_std_min,mal_average_std_mean,mal_average_std_max,mal_average_std_std," +
-      "mal_max_min_min,mal_max_min_mean,mal_max_min_max,mal_max_min_std," +
-      "mal_max_mean_min,mal_max_mean_mean,mal_max_mean_max,mal_max_mean_std," +
-      "mal_max_max_min,mal_max_max_mean,mal_max_max_max,mal_max_max_std," +
-      "mal_max_std_min,mal_max_std_mean,mal_max_std_max,mal_max_std_std," +
-      "mal_standardDeviation_min_min,mal_standardDeviation_min_mean,mal_standardDeviation_min_max,mal_standardDeviation_min_std," +
-      "mal_standardDeviation_mean_min,mal_standardDeviation_mean_mean,mal_standardDeviation_mean_max,mal_standardDeviation_mean_std," +
-      "mal_standardDeviation_max_min,mal_standardDeviation_max_mean,mal_standardDeviation_max_max,mal_standardDeviation_max_std," +
-      "mal_standardDeviation_std_min,mal_standardDeviation_std_mean,mal_standardDeviation_std_max,mal_standardDeviation_std_std," +
-      "mal_pctTrusted_min_min,mal_pctTrusted_min_mean,mal_pctTrusted_min_max,mal_pctTrusted_min_std," +
-      "mal_pctTrusted_mean_min,mal_pctTrusted_mean_mean,mal_pctTrusted_mean_max,mal_pctTrusted_mean_std," +
-      "mal_pctTrusted_max_min,mal_pctTrusted_max_mean,mal_pctTrusted_max_max,mal_pctTrusted_max_std," +
-      "mal_pctTrusted_std_min,mal_pctTrusted_std_mean,mal_pctTrusted_std_max,mal_pctTrusted_std_std," +
-      "mal_pctUntrusted_min_min,mal_pctUntrusted_min_mean,mal_pctUntrusted_min_max,mal_pctUntrusted_min_std," +
-      "mal_pctUntrusted_mean_min,mal_pctUntrusted_mean_mean,mal_pctUntrusted_mean_max,mal_pctUntrusted_mean_std," +
-      "mal_pctUntrusted_max_min,mal_pctUntrusted_max_mean,mal_pctUntrusted_max_max,mal_pctUntrusted_max_std," +
-      "mal_pctUntrusted_std_min,mal_pctUntrusted_std_mean,mal_pctUntrusted_std_max,mal_pctUntrusted_std_std," +
-      "mal_assessedPct_min_min,mal_assessedPct_min_mean,mal_assessedPct_min_max,mal_assessedPct_min_std," +
-      "mal_assessedPct_mean_min,mal_assessedPct_mean_mean,mal_assessedPct_mean_max,mal_assessedPct_mean_std," +
-      "mal_assessedPct_max_min,mal_assessedPct_max_mean,mal_assessedPct_max_max,mal_assessedPct_max_std," +
-      "mal_assessedPct_std_min,mal_assessedPct_std_mean,mal_assessedPct_std_max,mal_assessedPct_std_std"
+      "coop_min_min_min,coop_min_min_mean,coop_min_min_max,coop_min_min_std,coop_min_min_median," +
+      "coop_min_mean_min,coop_min_mean_mean,coop_min_mean_max,coop_min_mean_std,coop_min_mean_median," +
+      "coop_min_max_min,coop_min_max_mean,coop_min_max_max,coop_min_max_std,coop_min_max_median," +
+      "coop_min_std_min,coop_min_std_mean,coop_min_std_max,coop_min_std_std,coop_min_std_median," +
+      "coop_min_median_min,coop_min_median_mean,coop_min_median_max,coop_min_median_std,coop_min_median_median," +
+      "coop_average_min_min,coop_average_min_mean,coop_average_min_max,coop_average_min_std,coop_average_min_median," +
+      "coop_average_mean_min,coop_average_mean_mean,coop_average_mean_max,coop_average_mean_std,coop_average_mean_median," +
+      "coop_average_max_min,coop_average_max_mean,coop_average_max_max,coop_average_max_std,coop_average_max_median," +
+      "coop_average_std_min,coop_average_std_mean,coop_average_std_max,coop_average_std_std,coop_average_std_median," +
+      "coop_average_median_min,coop_average_median_mean,coop_average_median_max,coop_average_median_std,coop_average_median_median," +
+      "coop_max_min_min,coop_max_min_mean,coop_max_min_max,coop_max_min_std,coop_max_min_median," +
+      "coop_max_mean_min,coop_max_mean_mean,coop_max_mean_max,coop_max_mean_std,coop_max_mean_median," +
+      "coop_max_max_min,coop_max_max_mean,coop_max_max_max,coop_max_max_std,coop_max_max_median," +
+      "coop_max_std_min,coop_max_std_mean,coop_max_std_max,coop_max_std_std,coop_max_std_median," +
+      "coop_max_median_min,coop_max_median_mean,coop_max_median_max,coop_max_median_std,coop_max_median_median," +
+      "coop_standardDeviation_min_min,coop_standardDeviation_min_mean,coop_standardDeviation_min_max,coop_standardDeviation_min_std,coop_standardDeviation_min_median," +
+      "coop_standardDeviation_mean_min,coop_standardDeviation_mean_mean,coop_standardDeviation_mean_max,coop_standardDeviation_mean_std,coop_standardDeviation_mean_median," +
+      "coop_standardDeviation_max_min,coop_standardDeviation_max_mean,coop_standardDeviation_max_max,coop_standardDeviation_max_std,coop_standardDeviation_max_median," +
+      "coop_standardDeviation_std_min,coop_standardDeviation_std_mean,coop_standardDeviation_std_max,coop_standardDeviation_std_std,coop_standardDeviation_std_median," +
+      "coop_standardDeviation_median_min,coop_standardDeviation_median_mean,coop_standardDeviation_median_max,coop_standardDeviation_median_std,coop_standardDeviation_median_median," +
+      "coop_pctTrusted_min_min,coop_pctTrusted_min_mean,coop_pctTrusted_min_max,coop_pctTrusted_min_std,coop_pctTrusted_min_median," +
+      "coop_pctTrusted_mean_min,coop_pctTrusted_mean_mean,coop_pctTrusted_mean_max,coop_pctTrusted_mean_std,coop_pctTrusted_mean_median," +
+      "coop_pctTrusted_max_min,coop_pctTrusted_max_mean,coop_pctTrusted_max_max,coop_pctTrusted_max_std,coop_pctTrusted_max_median," +
+      "coop_pctTrusted_std_min,coop_pctTrusted_std_mean,coop_pctTrusted_std_max,coop_pctTrusted_std_std,coop_pctTrusted_std_median," +
+      "coop_pctTrusted_median_min,coop_pctTrusted_median_mean,coop_pctTrusted_median_max,coop_pctTrusted_median_std,coop_pctTrusted_median_median," +
+      "coop_pctUntrusted_min_min,coop_pctUntrusted_min_mean,coop_pctUntrusted_min_max,coop_pctUntrusted_min_std,coop_pctUntrusted_min_median," +
+      "coop_pctUntrusted_mean_min,coop_pctUntrusted_mean_mean,coop_pctUntrusted_mean_max,coop_pctUntrusted_mean_std,coop_pctUntrusted_mean_median," +
+      "coop_pctUntrusted_max_min,coop_pctUntrusted_max_mean,coop_pctUntrusted_max_max,coop_pctUntrusted_max_std,coop_pctUntrusted_max_median," +
+      "coop_pctUntrusted_std_min,coop_pctUntrusted_std_mean,coop_pctUntrusted_std_max,coop_pctUntrusted_std_std,coop_pctUntrusted_std_median," +
+      "coop_pctUntrusted_median_min,coop_pctUntrusted_median_mean,coop_pctUntrusted_median_max,coop_pctUntrusted_median_std,coop_pctUntrusted_median_median," +
+      "coop_assessedPct_min_min,coop_assessedPct_min_mean,coop_assessedPct_min_max,coop_assessedPct_min_std,coop_assessedPct_min_median," +
+      "coop_assessedPct_mean_min,coop_assessedPct_mean_mean,coop_assessedPct_mean_max,coop_assessedPct_mean_std,coop_assessedPct_mean_median," +
+      "coop_assessedPct_max_min,coop_assessedPct_max_mean,coop_assessedPct_max_max,coop_assessedPct_max_std,coop_assessedPct_max_median," +
+      "coop_assessedPct_std_min,coop_assessedPct_std_mean,coop_assessedPct_std_max,coop_assessedPct_std_std,coop_assessedPct_std_median," +
+      "coop_assessedPct_median_min,coop_assessedPct_median_mean,coop_assessedPct_median_max,coop_assessedPct_median_std,coop_assessedPct_median_median," +
+      "mal_min_min_min,mal_min_min_mean,mal_min_min_max,mal_min_min_std,mal_min_min_median," +
+      "mal_min_mean_min,mal_min_mean_mean,mal_min_mean_max,mal_min_mean_std,mal_min_mean_median," +
+      "mal_min_max_min,mal_min_max_mean,mal_min_max_max,mal_min_max_std,mal_min_max_median," +
+      "mal_min_std_min,mal_min_std_mean,mal_min_std_max,mal_min_std_std,mal_min_std_median," +
+      "mal_min_median_min,mal_min_median_mean,mal_min_median_max,mal_min_median_std,mal_min_median_median," +
+      "mal_average_min_min,mal_average_min_mean,mal_average_min_max,mal_average_min_std,mal_average_min_median," +
+      "mal_average_mean_min,mal_average_mean_mean,mal_average_mean_max,mal_average_mean_std,mal_average_mean_median," +
+      "mal_average_max_min,mal_average_max_mean,mal_average_max_max,mal_average_max_std,mal_average_max_median," +
+      "mal_average_std_min,mal_average_std_mean,mal_average_std_max,mal_average_std_std,mal_average_std_median," +
+      "mal_average_median_min,mal_average_median_mean,mal_average_median_max,mal_average_median_std,mal_average_median_median," +
+      "mal_max_min_min,mal_max_min_mean,mal_max_min_max,mal_max_min_std,mal_max_min_median," +
+      "mal_max_mean_min,mal_max_mean_mean,mal_max_mean_max,mal_max_mean_std,mal_max_mean_median," +
+      "mal_max_max_min,mal_max_max_mean,mal_max_max_max,mal_max_max_std,mal_max_max_median," +
+      "mal_max_std_min,mal_max_std_mean,mal_max_std_max,mal_max_std_std,mal_max_std_median," +
+      "mal_max_median_min,mal_max_median_mean,mal_max_median_max,mal_max_median_std,mal_max_median_median," +
+      "mal_standardDeviation_min_min,mal_standardDeviation_min_mean,mal_standardDeviation_min_max,mal_standardDeviation_min_std,mal_standardDeviation_min_median," +
+      "mal_standardDeviation_mean_min,mal_standardDeviation_mean_mean,mal_standardDeviation_mean_max,mal_standardDeviation_mean_std,mal_standardDeviation_mean_median," +
+      "mal_standardDeviation_max_min,mal_standardDeviation_max_mean,mal_standardDeviation_max_max,mal_standardDeviation_max_std,mal_standardDeviation_max_median," +
+      "mal_standardDeviation_std_min,mal_standardDeviation_std_mean,mal_standardDeviation_std_max,mal_standardDeviation_std_std,mal_standardDeviation_std_median," +
+      "mal_standardDeviation_median_min,mal_standardDeviation_median_mean,mal_standardDeviation_median_max,mal_standardDeviation_median_std,mal_standardDeviation_median_median," +
+      "mal_pctTrusted_min_min,mal_pctTrusted_min_mean,mal_pctTrusted_min_max,mal_pctTrusted_min_std,mal_pctTrusted_min_median," +
+      "mal_pctTrusted_mean_min,mal_pctTrusted_mean_mean,mal_pctTrusted_mean_max,mal_pctTrusted_mean_std,mal_pctTrusted_mean_median," +
+      "mal_pctTrusted_max_min,mal_pctTrusted_max_mean,mal_pctTrusted_max_max,mal_pctTrusted_max_std,mal_pctTrusted_max_median," +
+      "mal_pctTrusted_std_min,mal_pctTrusted_std_mean,mal_pctTrusted_std_max,mal_pctTrusted_std_std,mal_pctTrusted_std_median," +
+      "mal_pctTrusted_median_min,mal_pctTrusted_median_mean,mal_pctTrusted_median_max,mal_pctTrusted_median_std,mal_pctTrusted_median_median," +
+      "mal_pctUntrusted_min_min,mal_pctUntrusted_min_mean,mal_pctUntrusted_min_max,mal_pctUntrusted_min_std,mal_pctUntrusted_min_median," +
+      "mal_pctUntrusted_mean_min,mal_pctUntrusted_mean_mean,mal_pctUntrusted_mean_max,mal_pctUntrusted_mean_std,mal_pctUntrusted_mean_median," +
+      "mal_pctUntrusted_max_min,mal_pctUntrusted_max_mean,mal_pctUntrusted_max_max,mal_pctUntrusted_max_std,mal_pctUntrusted_max_median," +
+      "mal_pctUntrusted_std_min,mal_pctUntrusted_std_mean,mal_pctUntrusted_std_max,mal_pctUntrusted_std_std,mal_pctUntrusted_std_median," +
+      "mal_pctUntrusted_median_min,mal_pctUntrusted_median_mean,mal_pctUntrusted_median_max,mal_pctUntrusted_median_std,mal_pctUntrusted_median_median," +
+      "mal_assessedPct_min_min,mal_assessedPct_min_mean,mal_assessedPct_min_max,mal_assessedPct_min_std,mal_assessedPct_min_median," +
+      "mal_assessedPct_mean_min,mal_assessedPct_mean_mean,mal_assessedPct_mean_max,mal_assessedPct_mean_std,mal_assessedPct_mean_median," +
+      "mal_assessedPct_max_min,mal_assessedPct_max_mean,mal_assessedPct_max_max,mal_assessedPct_max_std,mal_assessedPct_max_median," +
+      "mal_assessedPct_std_min,mal_assessedPct_std_mean,mal_assessedPct_std_max,mal_assessedPct_std_std,mal_assessedPct_std_median," +
+      "mal_assessedPct_median_min,mal_assessedPct_median_mean,mal_assessedPct_median_max,mal_assessedPct_median_std,mal_assessedPct_median_median"
     )
   val fullFileName = s"${dimension}_full.csv"
   println(s"Writing: $fullFileName")
@@ -283,23 +305,23 @@ def aggregateByDimension[T: Numeric](
       )
       (dimensionValue, simplify(coop), simplify(mal))
     }
-    val liteCsvRows = liteReduced
+  val liteCsvRows = liteReduced
     .map((dimensionVal, coop, mal) => s"$dimensionVal,${coop.altCsv},${mal.altCsv}")
     .prepended(s"$dimension," +
-      "coop_min_min,coop_min_mean,coop_min_max,coop_min_std," +
-      "coop_average_min,coop_average_mean,coop_average_max,coop_average_std," +
-      "coop_max_min,coop_max_mean,coop_max_max,coop_max_std," +
-      "coop_standardDeviation_min,coop_standardDeviation_mean,coop_standardDeviation_max,coop_standardDeviation_std," +
-      "coop_pctTrusted_min,coop_pctTrusted_mean,coop_pctTrusted_max,coop_pctTrusted_std," +
-      "coop_pctUntrusted_min,coop_pctUntrusted_mean,coop_pctUntrusted_max,coop_pctUntrusted_std," +
-      "coop_assessedPct_min,coop_assessedPct_mean,coop_assessedPct_max,coop_assessedPct_std," +
-      "mal_min_min,mal_min_mean,mal_min_max,mal_min_std," +
-      "mal_average_min,mal_average_mean,mal_average_max,mal_average_std," +
-      "mal_max_min,mal_max_mean,mal_max_max,mal_max_std," +
-      "mal_standardDeviation_min,mal_standardDeviation_mean,mal_standardDeviation_max,mal_standardDeviation_std," +
-      "mal_pctTrusted_min,mal_pctTrusted_mean,mal_pctTrusted_max,mal_pctTrusted_std," +
-      "mal_pctUntrusted_min,mal_pctUntrusted_mean,mal_pctUntrusted_max,mal_pctUntrusted_std," +
-      "mal_assessedPct_min,mal_assessedPct_mean,mal_assessedPct_max,mal_assessedPct_std")
+      "coop_min_min,coop_min_mean,coop_min_max,coop_min_std,coop_min_median," +
+      "coop_average_min,coop_average_mean,coop_average_max,coop_average_std,coop_average_median," +
+      "coop_max_min,coop_max_mean,coop_max_max,coop_max_std,coop_max_median," +
+      "coop_standardDeviation_min,coop_standardDeviation_mean,coop_standardDeviation_max,coop_standardDeviation_std,coop_standardDeviation_median," +
+      "coop_pctTrusted_min,coop_pctTrusted_mean,coop_pctTrusted_max,coop_pctTrusted_std,coop_pctTrusted_median," +
+      "coop_pctUntrusted_min,coop_pctUntrusted_mean,coop_pctUntrusted_max,coop_pctUntrusted_std,coop_pctUntrusted_median," +
+      "coop_assessedPct_min,coop_assessedPct_mean,coop_assessedPct_max,coop_assessedPct_std,coop_assessedPct_median," +
+      "mal_min_min,mal_min_mean,mal_min_max,mal_min_std,mal_min_median," +
+      "mal_average_min,mal_average_mean,mal_average_max,mal_average_std,mal_average_median," +
+      "mal_max_min,mal_max_mean,mal_max_max,mal_max_std,mal_max_median," +
+      "mal_standardDeviation_min,mal_standardDeviation_mean,mal_standardDeviation_max,mal_standardDeviation_std,mal_standardDeviation_median," +
+      "mal_pctTrusted_min,mal_pctTrusted_mean,mal_pctTrusted_max,mal_pctTrusted_std,mal_pctTrusted_median," +
+      "mal_pctUntrusted_min,mal_pctUntrusted_mean,mal_pctUntrusted_max,mal_pctUntrusted_std,mal_pctUntrusted_median," +
+      "mal_assessedPct_min,mal_assessedPct_mean,mal_assessedPct_max,mal_assessedPct_std,mal_assessedPct_median")
   val liteFileName = s"${dimension}_lite.csv"
   println(s"Writing $liteFileName")
   writeFile(s"data/processed/$liteFileName", liteCsvRows)

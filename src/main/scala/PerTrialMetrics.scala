@@ -57,26 +57,26 @@ def perTrialAggregates(simulations: List[Simulation]): Unit =
   val perTrialCsv = perTrialAggregate.map((stats, all, coop, mal) =>
       s"${stats.numNodes},${stats.numCycles},${stats.malPct},${stats.malActThresh},${stats.malActPct},${all.csv},${coop.csv},${mal.csv}")
     .prepended("numNodes,numCycles,malPct,malActThresh,malActPct," +
-      "allMin_min,allMin_mean,allMin_max,allMin_std," +
-      "allMean_min,allMean_mean,allMean_max,allMean_std," +
-      "allMax_min,allMax_mean,allMax_max,allMax_std," +
-      "allStandardDeviation_min,allStandardDeviation_mean,allStandardDeviation_max,allStandardDeviation_std," +
-      "allTotalPeers_min,allTotalPeers_mean,allTotalPeers_max,allTotalPeers_std," +
-      "allTrusted_min,allTrusted_mean,allTrusted_max,allTrusted_std," +
-      "allUntrusted_min,allUntrusted_mean,allUntrusted_max,allUntrusted_std," +
-      "coopMin_min,coopMin_mean,coopMin_max,coopMin_std," +
-      "coopMean_min,coopMean_mean,coopMean_max,coopMean_std," +
-      "coopMax_min,coopMax_mean,coopMax_max,coopMax_std," +
-      "coopStandardDeviation_min,coopStandardDeviation_mean,coopStandardDeviation_max,coopStandardDeviation_std," +
-      "coopTotalPeers_min,coopTotalPeers_mean,coopTotalPeers_max,coopTotalPeers_std," +
-      "coopTrusted_min,coopTrusted_mean,coopTrusted_max,coopTrusted_std," +
-      "coopUntrusted_min,coopUntrusted_mean,coopUntrusted_max,coopUntrusted_std," +
-      "malMin_min,malMin_mean,malMin_max,malMin_std," +
-      "malMean_min,malMean_mean,malMean_max,malMean_std," +
-      "malMax_min,malMax_mean,malMax_max,malMax_std," +
-      "malStandardDeviation_min,malStandardDeviation_mean,malStandardDeviation_max,malStandardDeviation_std," +
-      "malTotalPeers_min,malTotalPeers_mean,malTotalPeers_max,malTotalPeers_std," +
-      "malTrusted_min,malTrusted_mean,malTrusted_max,malTrusted_std," +
-      "malUntrusted_min,malUntrusted_mean,malUntrusted_max,malUntrusted_std"
+      "allMin_min,allMin_mean,allMin_max,allMin_std,allMin_median," +
+      "allMean_min,allMean_mean,allMean_max,allMean_std,allMean_median," +
+      "allMax_min,allMax_mean,allMax_max,allMax_std,allMax_median," +
+      "allStandardDeviation_min,allStandardDeviation_mean,allStandardDeviation_max,allStandardDeviation_std,allStandardDeviation_median," +
+      "allTotalPeers_min,allTotalPeers_mean,allTotalPeers_max,allTotalPeers_std,allTotalPeers_median," +
+      "allTrusted_min,allTrusted_mean,allTrusted_max,allTrusted_std,allTrusted_median," +
+      "allUntrusted_min,allUntrusted_mean,allUntrusted_max,allUntrusted_std,allUntrusted_median," +
+      "coopMin_min,coopMin_mean,coopMin_max,coopMin_std,coopMin_median," +
+      "coopMean_min,coopMean_mean,coopMean_max,coopMean_std,coopMean_median," +
+      "coopMax_min,coopMax_mean,coopMax_max,coopMax_std,coopMax_median," +
+      "coopStandardDeviation_min,coopStandardDeviation_mean,coopStandardDeviation_max,coopStandardDeviation_std,coopStandardDeviation_median," +
+      "coopTotalPeers_min,coopTotalPeers_mean,coopTotalPeers_max,coopTotalPeers_std,coopTotalPeers_median," +
+      "coopTrusted_min,coopTrusted_mean,coopTrusted_max,coopTrusted_std,coopTrusted_median," +
+      "coopUntrusted_min,coopUntrusted_mean,coopUntrusted_max,coopUntrusted_std,coopUntrusted_median," +
+      "malMin_min,malMin_mean,malMin_max,malMin_std,malMin_median," +
+      "malMean_min,malMean_mean,malMean_max,malMean_std,malMean_median," +
+      "malMax_min,malMax_mean,malMax_max,malMax_std,malMax_median," +
+      "malStandardDeviation_min,malStandardDeviation_mean,malStandardDeviation_max,malStandardDeviation_std,malStandardDeviation_median," +
+      "malTotalPeers_min,malTotalPeers_mean,malTotalPeers_max,malTotalPeers_std,malTotalPeers_median," +
+      "malTrusted_min,malTrusted_mean,malTrusted_max,malTrusted_std,malTrusted_median," +
+      "malUntrusted_min,malUntrusted_mean,malUntrusted_max,malUntrusted_std,malUntrusted_median"
     )
   writeFile("data/processed/perTrialAggregates.csv", perTrialCsv)

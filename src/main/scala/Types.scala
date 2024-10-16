@@ -150,8 +150,8 @@ class Counter(val radices: List[Int]):
 
 case class SimulationByTypes(stats: SimStats, all: ReputationInformation, coop: ReputationInformation, mal: ReputationInformation)
 
-case class AverageStats(mean: Double, standardDeviation: Double, min: Double, max: Double)
+case class AverageStats(mean: Double, standardDeviation: Double, min: Double, max: Double, median: Double)
 object AverageStats {
   def fromValues(values: Iterable[Double]): AverageStats =
-    AverageStats(mean(values), standardDeviation(values), values.min, values.max)
+    AverageStats(mean(values), standardDeviation(values), values.min, values.max, median(values))
 }
