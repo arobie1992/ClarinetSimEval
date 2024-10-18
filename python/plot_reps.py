@@ -2,7 +2,6 @@ import os
 
 import matplotlib.pyplot as plt
 import csv
-import sys
 
 def add_data(group, values):
     min_val = values[0]
