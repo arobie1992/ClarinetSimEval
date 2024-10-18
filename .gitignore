@@ -35,3 +35,6 @@ metals.sbt
 
 data/uncompressed/
 data/scratch/
+/python/python.iml
+
+*.png
