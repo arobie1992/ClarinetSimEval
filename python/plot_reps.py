@@ -1,5 +1,8 @@
+import os
+
 import matplotlib.pyplot as plt
 import csv
+import sys
 
 def add_data(group, values):
     min_val = values[0]
@@ -29,7 +32,7 @@ def add_error_bar(ax, x_vals, data, type):
     eb[-1][0].set_linestyle(s)
 
 
-def main():
+def create_graph(file):
     data={
         "dimension": "",
         "xVals": [],
@@ -45,7 +48,7 @@ def main():
         }
     }
 
-    with open('../data/processed/malActPct_litest.csv', 'r') as f:
+    with open(file, 'r') as f:
         reader = csv.reader(f)
         for i, row in enumerate(reader):
             if i == 0:
@@ -71,6 +74,12 @@ def main():
 
     plt.savefig(f'../data/graphs/{data["dimension"]}.png')
 
+
+def main():
+    csvs = os.listdir('../data/processed')
+    for f in csvs:
+        if f.endswith('_litest.csv'):
+            create_graph(f'../data/processed/{f}')
 
 if __name__ == "__main__":
     main()
