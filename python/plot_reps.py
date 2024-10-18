@@ -27,7 +27,7 @@ def add_data(group, values):
 def add_error_bar(ax, x_vals, data, type):
     s = '-' if type == "coop" else '-.'
     c = 'blue' if type == "coop" else 'red'
-    eb = ax.errorbar(x_vals, data["vals"], [data["errsLow"], data["errsHigh"]], fmt='.', linewidth=2, capsize=6, ls=s, color=c)
+    eb = ax.errorbar(x_vals, data["vals"], [data["errsLow"], data["errsHigh"]], fmt='.', linewidth=2, capsize=6, ls=s, color=c, label=type)
     eb[-1][0].set_linestyle(s)
 
 
@@ -70,8 +70,9 @@ def create_graph(file):
     ax.axhline(y=0, color='k')
     ax.axvline(x=0, color='k')
     plt.xticks(data["xVals"], data["xVals"])
+    plt.legend(loc='lower left')
 
-    plt.savefig(f'../data/graphs/{data["dimension"]}.png')
+    plt.savefig(f'../data/graphs/{data["dimension"]}_rep.png')
 
 
 def main():
